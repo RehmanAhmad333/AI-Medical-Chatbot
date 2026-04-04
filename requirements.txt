@@ -5,7 +5,7 @@ langchain-core==0.3.68
 langchain-groq==0.3.5
 langchain-huggingface==0.3.0
 langchain-text-splitters==0.3.8
-faiss-cpu==1.11.0
+faiss-cpu>=1.12.0
 sentence-transformers==5.0.0
 huggingface-hub==0.33.2
 transformers==4.53.1
