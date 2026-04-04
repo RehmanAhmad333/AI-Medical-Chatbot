@@ -53,3 +53,5 @@ db = FAISS.from_documents(text_chunks , embedding_model)
 db.save_local(DB_FAISS_PATH)
 
 
+
+

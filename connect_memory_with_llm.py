@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv, find_dotenv   # type: ignore
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint # type: ignore
+from langchain_huggingface import HuggingFaceEndpoint # type: ignore
 from langchain_core.prompts import PromptTemplate # type: ignore
 from langchain_community.vectorstores import FAISS # type: ignore
 from langchain_huggingface import HuggingFaceEmbeddings # type: ignore
