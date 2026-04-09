@@ -5,9 +5,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
-# from langchain.memory import ConversationBufferWindowMemory
-# from langchain.chains import ConversationalRetrievalChain
-from langchain.chains import RetrievalQA 
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
@@ -177,8 +176,6 @@ def inject_custom_css():
 def init_session():
     if 'messages' not in st.session_state:
         st.session_state.messages = []
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
     if 'suggestion_clicked' not in st.session_state:
         st.session_state.suggestion_clicked = None
 
@@ -322,20 +319,19 @@ MediBot:""",
 )
 
 
-def get_chain(vectorstore):
+def get_answer(prompt, vectorstore):
     llm = ChatGroq(
         model_name="llama-3.1-8b-instant",
         temperature=0.2,
         groq_api_key=os.environ["GROQ_API_KEY"]
     )
-    return RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=vectorstore.as_retriever(search_kwargs={'k': 4}),
-        return_source_documents=False,
-        chain_type_kwargs={"prompt": MEDICAL_PROMPT}
-    )
-
+    
+    retriever = vectorstore.as_retriever(search_kwargs={'k': 4})
+    docs = retriever.invoke(prompt)
+    context = "\n\n".join([d.page_content for d in docs])
+    
+    chain = MEDICAL_PROMPT | llm | StrOutputParser()
+    return chain.invoke({"context": context, "question": prompt})
 
 def is_greeting(text):
     return text.lower().strip() in ["hi", "hello", "hey", "salam", "good morning", "good evening", "hola", "hi there"]
@@ -374,7 +370,6 @@ def main():
         st.info("**ℹ️ About**\n- 🏥 Evidence‑based info\n- 💬 Symptom checker\n- ⚠️ Emergency detection\n- ✅ Always consult a doctor")
         if st.button("🗑️ Clear Chat", use_container_width=True):
             st.session_state.messages = []
-            st.session_state.chat_history = []
             st.session_state.suggestion_clicked = None
             st.rerun()
         st.markdown("---")
@@ -459,9 +454,8 @@ def main():
                     vectorstore = get_vectorstore()
                     
                     # Only question pass - memory  handle with chain
-                    chain = get_chain(vectorstore)
-                    response = chain.invoke({"query": prompt})
-                    answer = response["result"]
+                    answer = get_answer(prompt, vectorstore)
+
                 except Exception as e:
                     answer = f"Sorry, an error occurred: {str(e)}"
 
